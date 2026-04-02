@@ -49,7 +49,6 @@ const MapArea = ({ onRouteClick }: Props) => {
     const draw = async () => {
       const bounds: L.LatLng[] = [];
       const drawnColors: Record<string, number> = {};
-      let routeCount = 0;
 
       for (const r of nearby.routes.slice(0, 10)) {
         try {
@@ -66,10 +65,7 @@ const MapArea = ({ onRouteClick }: Props) => {
             .bindPopup(`<b style="color:${color}">${shape.route_short_name}</b>`)
             .on("click", () => onRouteClick?.(r.route_id));
           pts.forEach(p => bounds.push(L.latLng(p)));
-          routeCount++;
-        } catch (e) { 
-          console.log('Shape error:', r.route_id, e); 
-        }
+        } catch (e) { console.log('Shape error:', r.route_id, e); }
       }
 
       nearby.stops?.slice(0, 15).forEach(s => {
@@ -79,7 +75,10 @@ const MapArea = ({ onRouteClick }: Props) => {
         stopMarkersRef.current.push(m);
       });
 
-      if (bounds.length > 0) map.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
+      if (bounds.length > 0) {
+        map.fitBounds(L.latLngBounds(bounds), { padding: [30, 30] });
+        map.invalidateSize();
+      }
     };
 
     draw();
