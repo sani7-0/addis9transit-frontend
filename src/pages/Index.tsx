@@ -80,18 +80,17 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-start justify-center">
-      <div className="w-full max-w-[390px] h-[844px] md:my-6 md:rounded-[2.5rem] md:overflow-hidden md:shadow-2xl bg-card relative flex flex-col overflow-hidden">
-        <motion.button
-          onClick={toggleDark}
-          className="absolute top-2 right-2 z-50 w-7 h-7 rounded-full bg-muted/80 flex items-center justify-center text-xs"
-          whileTap={{ scale: 0.9 }}
-          whileHover={{ scale: 1.1 }}
-        >
-          {isDark ? "☀️" : "🌙"}
-        </motion.button>
+    <div className="w-full h-screen bg-background relative flex flex-col overflow-hidden">
+      <motion.button
+        onClick={toggleDark}
+        className="absolute top-2 right-2 z-50 w-7 h-7 rounded-full bg-muted/80 flex items-center justify-center text-xs"
+        whileTap={{ scale: 0.9 }}
+        whileHover={{ scale: 1.1 }}
+      >
+        {isDark ? "☀️" : "🌙"}
+      </motion.button>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={screen}
@@ -111,9 +110,8 @@ const Index = () => {
               {renderScreen()}
             </motion.div>
           </AnimatePresence>
-        </div>
-        <BottomNav currentScreen={screen} onNavigate={handleNavigate} />
       </div>
+      <BottomNav currentScreen={screen} onNavigate={handleNavigate} />
     </div>
   );
 };

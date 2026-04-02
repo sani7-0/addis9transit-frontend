@@ -71,6 +71,8 @@ const SearchScreen = ({ onNavigate }: SearchScreenProps) => {
   const handleItemClick = (item: typeof allPlaces[0]) => {
     if (item.type === 'route') {
       onNavigate("route-detail", item.id);
+    } else if (item.type === 'stop') {
+      onNavigate("planner");
     } else {
       onNavigate("planner");
     }

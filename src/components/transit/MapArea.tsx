@@ -9,19 +9,23 @@ import { getRouteShape } from "@/lib/api";
 interface Props {
   onRouteClick?: (id: RouteId) => void;
   selectedRoute?: RouteId | null;
+  userLocation?: { lat: number; lon: number } | null;
 }
 
 const CENTER: [number, number] = [9.025, 38.746];
 const fmt = (c?: string) => c ? (c.startsWith("#") ? c : `#${c}`) : "#E53935";
 
-const MapArea = ({ onRouteClick }: Props) => {
+const MapArea = ({ onRouteClick, userLocation }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const stopMarkersRef = useRef<L.Marker[]>([]);
   const busMarkersRef = useRef<L.Marker[]>([]);
-  const { data: nearby } = useNearbyRoutes(CENTER[0], CENTER[1], 2);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const { data: nearby } = useNearbyRoutes(userLocation?.lat || CENTER[0], userLocation?.lon || CENTER[1], 2);
   const { data: buses } = useVehicles();
   const [ready, setReady] = useState(false);
+
+  const mapCenter: [number, number] = userLocation ? [userLocation.lat, userLocation.lon] : CENTER;
 
   // Init map - cleanup any existing map first
   useEffect(() => {
@@ -34,11 +38,21 @@ const MapArea = ({ onRouteClick }: Props) => {
     }
 
     // Create fresh map
-    const map = L.map(containerRef.current, { center: CENTER, zoom: 13, zoomControl: false });
+    const map = L.map(containerRef.current, { center: mapCenter, zoom: 14, zoomControl: false });
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png").addTo(map);
-    L.marker(CENTER, {
-      icon: L.divIcon({ html: '<div style="width:14px;height:14px;border-radius:50%;background:#4F46E5;border:3px solid white;box-shadow:0 0 10px rgba(79,70,229,.5)"></div>', iconSize: [14,14], iconAnchor: [7,7] })
-    }).addTo(map).bindPopup("You");
+    
+    // Add user location marker
+    if (userLocation) {
+      const userIcon = L.divIcon({ 
+        html: '<div style="width:16px;height:16px;border-radius:50%;background:#4F46E5;border:3px solid white;box-shadow:0 0 12px rgba(79,70,229,.5)"></div>', 
+        iconSize: [16, 16], 
+        iconAnchor: [8, 8] 
+      });
+      const marker = L.marker([userLocation.lat, userLocation.lon], { icon: userIcon }).addTo(map);
+      marker.bindPopup("You");
+      userMarkerRef.current = marker;
+    }
+    
     mapRef.current = map;
     setReady(true);
 
@@ -47,7 +61,7 @@ const MapArea = ({ onRouteClick }: Props) => {
       mapRef.current = null;
       setReady(false);
     };
-  }, []);
+  }, [mapCenter[0], mapCenter[1]]);
 
   // Draw routes when ready
   useEffect(() => {

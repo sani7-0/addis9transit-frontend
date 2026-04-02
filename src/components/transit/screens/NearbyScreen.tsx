@@ -181,7 +181,7 @@ const NearbyScreen = ({ onNavigate, selectedRoute }: NearbyScreenProps) => {
         transition={{ type: "spring", stiffness: 400, damping: 35 }}
         className="shrink-0"
       >
-        <MapArea key={mapKey} onRouteClick={handleRouteClick} selectedRoute={selectedRoute} />
+        <MapArea key={mapKey} onRouteClick={handleRouteClick} selectedRoute={selectedRoute} userLocation={userLocation} />
       </motion.div>
 
       <motion.div
