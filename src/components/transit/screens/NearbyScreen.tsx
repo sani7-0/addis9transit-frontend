@@ -20,9 +20,14 @@ const NearbyScreen = ({ onNavigate, selectedRoute }: NearbyScreenProps) => {
   const [snapIndex, setSnapIndex] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [etaKey, setEtaKey] = useState(0);
+  const [mapKey, setMapKey] = useState(Date.now());
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const controls = useAnimation();
+
+  useEffect(() => {
+    setMapKey(Date.now());
+  }, []);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -176,7 +181,7 @@ const NearbyScreen = ({ onNavigate, selectedRoute }: NearbyScreenProps) => {
         transition={{ type: "spring", stiffness: 400, damping: 35 }}
         className="shrink-0"
       >
-        <MapArea onRouteClick={handleRouteClick} selectedRoute={selectedRoute} />
+        <MapArea key={mapKey} onRouteClick={handleRouteClick} selectedRoute={selectedRoute} />
       </motion.div>
 
       <motion.div

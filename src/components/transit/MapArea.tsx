@@ -15,7 +15,7 @@ const CENTER: [number, number] = [9.025, 38.746];
 const fmt = (c?: string) => c ? (c.startsWith("#") ? c : `#${c}`) : "#E53935";
 
 const MapArea = ({ onRouteClick }: Props) => {
-  const divRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const stopMarkersRef = useRef<L.Marker[]>([]);
   const busMarkersRef = useRef<L.Marker[]>([]);
@@ -23,17 +23,30 @@ const MapArea = ({ onRouteClick }: Props) => {
   const { data: buses } = useVehicles();
   const [ready, setReady] = useState(false);
 
-  // Init map once
+  // Init map - cleanup any existing map first
   useEffect(() => {
-    if (!divRef.current || mapRef.current) return;
-    const map = L.map(divRef.current, { center: CENTER, zoom: 13, zoomControl: false });
+    if (!containerRef.current) return;
+
+    // Remove any existing map from this container
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
+    // Create fresh map
+    const map = L.map(containerRef.current, { center: CENTER, zoom: 13, zoomControl: false });
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png").addTo(map);
     L.marker(CENTER, {
       icon: L.divIcon({ html: '<div style="width:14px;height:14px;border-radius:50%;background:#4F46E5;border:3px solid white;box-shadow:0 0 10px rgba(79,70,229,.5)"></div>', iconSize: [14,14], iconAnchor: [7,7] })
     }).addTo(map).bindPopup("You");
     mapRef.current = map;
     setReady(true);
-    return () => { map.remove(); mapRef.current = null; setReady(false); };
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      setReady(false);
+    };
   }, []);
 
   // Draw routes when ready
@@ -41,9 +54,9 @@ const MapArea = ({ onRouteClick }: Props) => {
     const map = mapRef.current;
     if (!map || !ready || !nearby?.routes?.length) return;
 
-    // Clear old
-    map.eachLayer(l => { if (l instanceof L.Polyline) map!.removeLayer(l); });
-    stopMarkersRef.current.forEach(m => { try { map!.removeLayer(m); } catch {} });
+    // Clear old polylines
+    map.eachLayer(l => { if (l instanceof L.Polyline) map.removeLayer(l); });
+    stopMarkersRef.current.forEach(m => { try { map.removeLayer(m); } catch {} });
     stopMarkersRef.current = [];
 
     const draw = async () => {
@@ -155,7 +168,7 @@ const MapArea = ({ onRouteClick }: Props) => {
 
   return (
     <div className="relative w-full h-full min-h-[280px]">
-      <div ref={divRef} style={{ width: "100%", height: "100%" }} />
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
       <button className="absolute top-4 left-4 z-[1000] w-9 h-9 rounded-xl bg-white/90 backdrop-blur shadow-lg flex items-center justify-center">
         <Settings className="w-4 h-4 text-gray-600" />
       </button>
