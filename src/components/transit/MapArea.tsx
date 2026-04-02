@@ -19,12 +19,11 @@ const MapArea = ({ onRouteClick }: Props) => {
   const mapRef = useRef<L.Map | null>(null);
   const stopMarkersRef = useRef<L.Marker[]>([]);
   const busMarkersRef = useRef<L.Marker[]>([]);
-  const routesDrawn = useRef(false);
   const { data: nearby } = useNearbyRoutes(CENTER[0], CENTER[1], 2);
   const { data: buses } = useVehicles();
   const [ready, setReady] = useState(false);
 
-  // Init map
+  // Init map once
   useEffect(() => {
     if (!divRef.current || mapRef.current) return;
     const map = L.map(divRef.current, { center: CENTER, zoom: 13, zoomControl: false });
@@ -34,15 +33,15 @@ const MapArea = ({ onRouteClick }: Props) => {
     }).addTo(map).bindPopup("You");
     mapRef.current = map;
     setReady(true);
-    return () => { map.remove(); mapRef.current = null; setReady(false); routesDrawn.current = false; };
+    return () => { map.remove(); mapRef.current = null; setReady(false); };
   }, []);
 
-  // Draw routes
+  // Draw routes when ready
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || !nearby?.routes?.length) return;
 
-    // Clear everything
+    // Clear old
     map.eachLayer(l => { if (l instanceof L.Polyline) map!.removeLayer(l); });
     stopMarkersRef.current.forEach(m => { try { map!.removeLayer(m); } catch {} });
     stopMarkersRef.current = [];
@@ -50,6 +49,7 @@ const MapArea = ({ onRouteClick }: Props) => {
     const draw = async () => {
       const bounds: L.LatLng[] = [];
       const drawnColors: Record<string, number> = {};
+      let routeCount = 0;
 
       for (const r of nearby.routes.slice(0, 10)) {
         try {
@@ -66,7 +66,10 @@ const MapArea = ({ onRouteClick }: Props) => {
             .bindPopup(`<b style="color:${color}">${shape.route_short_name}</b>`)
             .on("click", () => onRouteClick?.(r.route_id));
           pts.forEach(p => bounds.push(L.latLng(p)));
-        } catch (e) { console.log('Shape error:', r.route_id, e); }
+          routeCount++;
+        } catch (e) { 
+          console.log('Shape error:', r.route_id, e); 
+        }
       }
 
       nearby.stops?.slice(0, 15).forEach(s => {
