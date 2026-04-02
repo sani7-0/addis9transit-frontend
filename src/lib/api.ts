@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://addis9transit.onrender.com';
+const API_BASE_URL = 'https://addis9transit.onrender.com/api';
 
 export interface Route {
   route_id: string;
