@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AddisTransit Admin</title>
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <style>
+    body { margin: 0; background: #f0fdf4; }
+    #root { min-height: 100vh; }
+  </style>
+  <script type="module">
+    import { createRoot } from "react-dom/client";
+    import { AdminLogin, AdminDashboard } from "/admin-bundle.js";
+    
+    const root = createRoot(document.getElementById("root"));
+    
+    function App() {
+      const [token, setToken] = React.useState(localStorage.getItem("admin_token") || "");
+      
+      if (!token) {
+        return React.createElement(AdminLogin, { onLogin: (t) => { localStorage.setItem("admin_token", t); setToken(t); } });
+      }
+      return React.createElement(AdminDashboard, { onLogout: () => { localStorage.removeItem("admin_token"); setToken(""); } });
+    }
+    
+    root.render(React.createElement(App));
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+</body>
+</html>
