@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { motion, useAnimation, PanInfo } from "framer-motion";
-import { RefreshCw, MapPin } from "lucide-react";
+import { RefreshCw, MapPin, Navigation, X } from "lucide-react";
 import MapArea from "@/components/transit/MapArea";
 import SearchBar from "@/components/transit/SearchBar";
 import type { Screen, RouteId } from "@/pages/Index";
@@ -23,30 +23,54 @@ const NearbyScreen = ({ onNavigate, selectedRoute }: NearbyScreenProps) => {
   const [mapKey, setMapKey] = useState(Date.now());
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
+  const [showPermissionPopup, setShowPermissionPopup] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const controls = useAnimation();
 
   useEffect(() => {
     setMapKey(Date.now());
   }, []);
 
-  useEffect(() => {
+  const requestLocation = () => {
+    setShowPermissionPopup(false);
+    setLocationLoading(true);
+    setLocationError(null);
+
+    // Use pure browser geolocation - no Capacitor
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({ lat: position.coords.latitude, lon: position.coords.longitude });
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
           setLocationLoading(false);
+          console.log("Got location:", position.coords.latitude, position.coords.longitude);
         },
-        () => {
+        (error) => {
+          console.log("Location error:", error.message);
+          setLocationError("Location denied. Using Addis Ababa center.");
           setUserLocation(ADDIS_CENTER);
           setLocationLoading(false);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 30000,
+        }
       );
     } else {
+      setLocationError("Geolocation not supported.");
       setUserLocation(ADDIS_CENTER);
       setLocationLoading(false);
     }
-  }, []);
+  };
+
+  const skipLocation = () => {
+    setShowPermissionPopup(false);
+    setUserLocation(ADDIS_CENTER);
+    setLocationLoading(false);
+  };
 
   const location = userLocation || ADDIS_CENTER;
   const { data: nearbyData, isLoading, error, refetch } = useNearbyRoutes(location.lat, location.lon, 2);
@@ -75,6 +99,7 @@ const NearbyScreen = ({ onNavigate, selectedRoute }: NearbyScreenProps) => {
 
   const triggerRefresh = useCallback(() => {
     setIsRefreshing(true);
+    setMapKey(Date.now());
     refetch().finally(() => {
       setEtaKey((k) => k + 1);
       setIsRefreshing(false);
@@ -143,10 +168,55 @@ const NearbyScreen = ({ onNavigate, selectedRoute }: NearbyScreenProps) => {
     );
   };
 
-  if (locationLoading || isLoading) {
+  // Location permission popup
+  if (showPermissionPopup) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b from-emerald-600 to-emerald-800 p-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+        >
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Navigation className="w-8 h-8 text-emerald-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Enable Location</h2>
+            <p className="text-sm text-gray-500">
+              Allow AddisTransit to access your location to show nearby routes and buses
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={requestLocation}
+              className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2"
+            >
+              <MapPin className="w-5 h-5" />
+              Use My Location
+            </button>
+            <button
+              onClick={skipLocation}
+              className="w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold hover:bg-gray-200 transition"
+            >
+              Skip for Now
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (locationLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b from-emerald-600 to-emerald-800">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Navigation className="w-12 h-12 text-white" />
+        </motion.div>
+        <p className="text-white mt-4 font-medium">Finding your location...</p>
       </div>
     );
   }
@@ -164,6 +234,7 @@ const NearbyScreen = ({ onNavigate, selectedRoute }: NearbyScreenProps) => {
 
   return (
     <div className="flex flex-col relative overflow-hidden" style={{ height: "100%" }}>
+      {/* Location status bar */}
       <motion.div
         className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-primary/90 rounded-full px-3 py-1.5"
         initial={{ opacity: 0, y: -30 }}

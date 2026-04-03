@@ -87,12 +87,17 @@ async function fetchApi<T>(endpoint: string): Promise<T> {
 
 // Get all routes
 export async function getRoutes(): Promise<RoutesResponse> {
-  return fetchApi<RoutesResponse>('/public/routes');
+  return fetchApi<RoutesResponse>('/public/routes?limit=500&offset=0');
 }
 
-// Get all stops
+// Get all stops - API returns array directly
 export async function getStops(): Promise<StopsResponse> {
-  return fetchApi<StopsResponse>('/public/stops');
+  const data = await fetchApi<any>('/public/stops?limit=5000&offset=0');
+  // Handle both array and object response
+  if (Array.isArray(data)) {
+    return { stops: data, total: data.length };
+  }
+  return data;
 }
 
 // Get stops for a route
